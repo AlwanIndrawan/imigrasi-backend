@@ -68,9 +68,9 @@ ${userText}`
 
 
 /* =========================
-   ELEVENLABS (TEXT TO SPEECH)
+   HYPEREAL (TEXT TO SPEECH)
 ========================= */
-app.post("/tts-eleven", async (req, res) => {
+app.post("/tts", async (req, res) => {
 
   try {
 
@@ -78,28 +78,19 @@ app.post("/tts-eleven", async (req, res) => {
 
     const response = await axios({
       method: "POST",
-      url: `https://api.elevenlabs.io/v1/text-to-speech/${process.env.VOICE_ID}`,
+      url: "https://api.hypereal.ai/v1/audio/speech",
       headers: {
-        "xi-api-key": process.env.ELEVEN_API_KEY,
+        "Authorization": `Bearer ${process.env.HYPEREAL_API_KEY}`,
         "Content-Type": "application/json"
       },
       data: {
         text: text,
-        model_id: "eleven_multilingual_v2"
+        voice: "alloy",
+        language: "id",
+        output_format: "mp3"
       },
       responseType: "arraybuffer"
     });
-
-    const contentType = response.headers["content-type"];
-
-    if (!contentType || !contentType.includes("audio")) {
-      console.log("❌ Bukan audio dari Eleven:");
-      console.log(response.data.toString());
-
-      return res.status(500).json({
-        error: "TTS gagal"
-      });
-    }
 
     res.set({
       "Content-Type": "audio/mpeg"
@@ -109,8 +100,8 @@ app.post("/tts-eleven", async (req, res) => {
 
   } catch (error) {
 
-    console.log("❌ ERROR ELEVEN:");
-    console.log(error.response?.data?.toString() || error.message);
+    console.log("❌ ERROR HYPEREAL:");
+    console.log(error.response?.data || error.message);
 
     res.status(500).json({
       error: "TTS gagal"

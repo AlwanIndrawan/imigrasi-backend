@@ -11,64 +11,53 @@ app.use(express.json());
 /* =========================
    GEMINI API (CHAT AI)
 ========================= */
+
 app.post("/chat", async (req, res) => {
-
   try {
-
     const userText = req.body.message;
 
     const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      // MENGGUNAKAN FLASH-LITE UNTUK LIMIT YANG LEBIH BESAR
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
-        contents: [{
+        // PINDAHKAN INSTRUKSI KE SINI
+        system_instruction: {
           parts: [{
-            text: `Anda adalah pegawai pada Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Selatan.
-Tugas Anda memberikan informasi layanan keimigrasian secara singkat, jelas, dan langsung ke inti.
-
-Gunakan bahasa yang sopan, profesional, dan mudah dipahami.
-Hindari penggunaan simbol seperti *, tanda pagar, atau format poin.
-Jawaban disusun dalam kalimat biasa, bukan daftar.
-
-Tidak perlu menggunakan sapaan waktu seperti selamat pagi, siang, atau sore.
-Tidak perlu menggunakan kata sapaan seperti bapak atau ibu.
-Gunakan kalimat netral dan langsung ke informasi.
-
-Jika informasi tidak tersedia atau kurang jelas, arahkan untuk menghubungi petugas terkait.
-
-Pertanyaan:
-${userText}`
+            text: `Anda adalah pegawai pada Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Selatan. 
+            Tugas: Memberikan informasi layanan keimigrasian singkat, jelas, langsung ke inti.
+            Aturan Ketat: 
+            - Gunakan bahasa sopan & profesional.
+            - Dilarang keras menggunakan simbol (*, #, poin-poin).
+            - Susun dalam kalimat biasa/paragraf tunggal.
+            - Tanpa sapaan waktu (pagi/siang) dan tanpa sapaan Bapak/Ibu.
+            - Jika info tidak ada, arahkan ke petugas terkait.`
           }]
+        },
+        contents: [{
+          role: "user",
+          parts: [{ text: userText }]
         }]
       },
-      {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      }
+      { headers: { "Content-Type": "application/json" } }
     );
 
-    const reply =
-      response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Maaf, jawaban tidak tersedia.";
-
+    const reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, jawaban tidak tersedia.";
     res.json({ reply });
 
   } catch (error) {
-
     console.log("ERROR GEMINI:");
+    // Cek jika error 429 (Limit)
+    if (error.response?.status === 429) {
+        return res.json({ reply: "Maaf, layanan sedang padat. Silakan coba sesaat lagi." });
+    }
     console.log(error.response?.data || error.message);
-
-    res.json({
-      reply: "asisten sedang mengalami gangguan, terima kasih."
-    });
-
+    res.json({ reply: "Asisten sedang mengalami gangguan, terima kasih." });
   }
-
 });
 
 
 /* =========================
-   HYPEREAL (TEXT TO SPEECH)
+(TEXT TO SPEECH)
 ========================= */
 app.post("/tts", async (req, res) => {
 
@@ -76,31 +65,33 @@ app.post("/tts", async (req, res) => {
 
     const text = req.body.text;
 
-    const response = await axios({
-      method: "POST",
-      url: "https://api.hypereal.ai/v1/audio/speech",
-      headers: {
-        "Authorization": `Bearer ${process.env.HYPEREAL_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      data: {
-        text: text,
-        voice: "alloy",
-        language: "id",
-        output_format: "mp3"
-      },
-      responseType: "arraybuffer"
-    });
+    const response = await axios.post(
+      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
+      {
+        input: { text: text },
+        voice: {
+          languageCode: "id-ID",
+          name: "id-ID-Wavenet-A"
+        },
+        audioConfig: {
+          audioEncoding: "MP3"
+        }
+      }
+    );
+
+    const audioBase64 = response.data.audioContent;
+
+    const audioBuffer = Buffer.from(audioBase64, "base64");
 
     res.set({
       "Content-Type": "audio/mpeg"
     });
 
-    res.send(response.data);
+    res.send(audioBuffer);
 
   } catch (error) {
 
-    console.log("❌ ERROR HYPEREAL:");
+    console.log("❌ ERROR GOOGLE TTS:");
     console.log(error.response?.data || error.message);
 
     res.status(500).json({
@@ -110,6 +101,8 @@ app.post("/tts", async (req, res) => {
   }
 
 });
+
+
 
 
 /* =========================

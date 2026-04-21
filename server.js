@@ -24,7 +24,7 @@ app.post("/chat", async (req, res) => {
         system_instruction: {
           parts: [{
             text: `Anda adalah pegawai pada Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Selatan. 
-            Tugas: Memberikan informasi layanan keimigrasian singkat, jelas, langsung ke inti.
+            Tugas: Memberikan informasi tentang keimigrasian singkat, jelas, langsung ke inti.
             Aturan Ketat: 
             - Gunakan bahasa sopan & profesional.
             - Dilarang keras menggunakan simbol (*, #, poin-poin).
@@ -57,50 +57,58 @@ app.post("/chat", async (req, res) => {
 
 
 /* =========================
-(TEXT TO SPEECH)
+   ELEVENLABS (TEXT TO SPEECH)
 ========================= */
-app.post("/tts", async (req, res) => {
-
+app.post("/tts-eleven", async (req, res) => {
   try {
-
     const text = req.body.text;
 
-    const response = await axios.post(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_TTS_API_KEY}`,
-      {
-        input: { text: text },
-        voice: {
-          languageCode: "id-ID",
-          name: "id-ID-Wavenet-A"
-        },
-        audioConfig: {
-          audioEncoding: "MP3"
+    const response = await axios({
+      method: "POST",
+      url: `https://api.elevenlabs.io/v1/text-to-speech/${process.env.VOICE_ID}`,
+      headers: {
+        "xi-api-key": process.env.ELEVEN_API_KEY,
+        "Content-Type": "application/json"
+      },
+      data: {
+        text: text,
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75
         }
-      }
-    );
+      },
+      responseType: "arraybuffer"
+    });
 
-    const audioBase64 = response.data.audioContent;
+    // VALIDASI RESPONSE AUDIO
+    const contentType = response.headers["content-type"];
 
-    const audioBuffer = Buffer.from(audioBase64, "base64");
+    if (!contentType || !contentType.includes("audio")) {
+      console.log("❌ Response bukan audio:");
+      console.log(response.data.toString());
+
+      return res.status(500).json({
+        error: "TTS gagal"
+      });
+    }
 
     res.set({
       "Content-Type": "audio/mpeg"
     });
 
-    res.send(audioBuffer);
+    res.send(response.data);
 
   } catch (error) {
-
-    console.log("❌ ERROR GOOGLE TTS:");
-    console.log(error.response?.data || error.message);
+    console.log("❌ ERROR ELEVEN:");
+    console.log(error.response?.data?.toString() || error.message);
 
     res.status(500).json({
       error: "TTS gagal"
     });
-
   }
-
 });
+
 
 
 

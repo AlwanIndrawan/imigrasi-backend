@@ -17,29 +17,37 @@ app.post("/chat", async (req, res) => {
     const userText = req.body.message;
 
     const response = await axios.post(
-      // MENGGUNAKAN FLASH-LITE UNTUK LIMIT YANG LEBIH BESAR
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
+  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+  {
+    contents: [
       {
-        // PINDAHKAN INSTRUKSI KE SINI
-        system_instruction: {
-          parts: [{
-            text: `Anda adalah pegawai pada Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Selatan. 
-            Tugas: Memberikan informasi tentang keimigrasian singkat, jelas, langsung ke inti.
-            Aturan Ketat: 
-            - Gunakan bahasa sopan & profesional.
-            - Dilarang keras menggunakan simbol (*, #, poin-poin).
-            - Susun dalam kalimat biasa/paragraf tunggal.
-            - Tanpa sapaan waktu (pagi/siang) dan tanpa sapaan Bapak/Ibu.
-            - Jika info tidak ada, arahkan ke petugas terkait.`
-          }]
-        },
-        contents: [{
-          role: "user",
-          parts: [{ text: userText }]
-        }]
-      },
-      { headers: { "Content-Type": "application/json" } }
-    );
+        role: "user",
+        parts: [
+          {
+            text: `
+Anda adalah pegawai pada Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Selatan. 
+Tugas: Memberikan informasi tentang keimigrasian singkat, jelas, langsung ke inti.
+Aturan Ketat:
+- Gunakan bahasa sopan & profesional.
+- Dilarang keras menggunakan simbol (*, #, poin-poin).
+- Susun dalam kalimat biasa/paragraf tunggal.
+- Tanpa sapaan waktu dan tanpa sapaan Bapak/Ibu.
+- Jika info tidak ada, arahkan ke petugas terkait.
+
+Pertanyaan user:
+${userText}
+            `
+          }
+        ]
+      }
+    ]
+  },
+  {
+    headers: {
+      "Content-Type": "application/json"
+    }
+  }
+);
 
     const reply = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, jawaban tidak tersedia.";
     res.json({ reply });

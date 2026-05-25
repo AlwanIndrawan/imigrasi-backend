@@ -33,7 +33,7 @@ const faqList = [
   },
   {
     keywords: ["jam buka", "jam operasional", "jam kerja", "buka jam", "tutup jam", "waktu pelayanan"],
-    answer: `Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Selatan melayani masyarakat pada hari Senin hingga Jumat, pukul 08.00 hingga 16.00 WITA. Untuk layanan paspor, pendaftaran antrian dilakukan melalui aplikasi M-Paspor.`
+    answer: `Kantor Wilayah Direktorat Jenderal Imigrasi Sulawesi Selatan melayani masyarakat pada hari Senin hingga Jumat, pukul 08.00 hingga 16.00 WITA.`
   },
   {
     keywords: ["alamat kantor", "lokasi kantor", "dimana kantor", "kantor imigrasi makassar", "alamat imigrasi"],
